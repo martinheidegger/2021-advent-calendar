@@ -2,8 +2,8 @@ import SQLite from 'better-sqlite3'
 import { webcrypto as crypto } from 'crypto'
 
 function encodeBE (num, bytes) {
-  const high = num / 0xFFFFFF
   const low = num & 0xFFFFFF
+  const high = (num - low) / 0xFFFFFF
   bytes[0] = high >> 16
   bytes[1] = high >> 8
   bytes[2] = high

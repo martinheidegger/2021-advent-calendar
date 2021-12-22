@@ -281,21 +281,21 @@ The code to implement this is a bit too long here ([full code in the github repo
 // Reduce the Uint8Array depending on the amount of items within 
 getHumanID(
   // Counts how many items are in the database
-  countItems: (startTime: number, duration: number) => number,
+  countItems: (startTime: number, duration: number) => Promise<number>,
   // The UI that we want to present to the user
   uuid: Uint8Array
-): Uint8Array
+): Promise<Uint8Array>
 
 getItem(
   // Fetches the items based on timestamp and random id
   fetchItems: (
-    startTime: number,
-    duration: number,
-    startId: Uint8Array,
-    endId: Uint8Array
+    timeStart: number,
+    timeEnd: number,
+    randomStart: Uint8Array,
+    randomEnd: Uint8Array
   ) => Promise<Array<{ time: number, random: Uint8Array }>>,
   // The UUID that comes from the User
-  uuid: Uint8Array
+  humanID: Uint8Array
 ): Promise<{ time: number, random: Uint8Array }>
 ```
 
