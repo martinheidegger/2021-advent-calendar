@@ -12,11 +12,13 @@ await Promise.all(files
 
 for (const [file, entry] of files.map(entry => /^(\d{2}_.*)\.mjs$/g.exec(entry)).filter(Boolean)) {
   console.log(`-- ${entry} --`)
-  const p = spawn(process.argv[0], [file], )
+  const p = spawn(process.argv[0], [file])
+  let prefix = '  '
   await new Promise((resolve, reject) => {
     p.on('error', reject)
     p.stdout.on('data', data => {
-      process.stdout.write(data.toString().replace(/^/gm, '  '))
+      process.stdout.write(prefix + data.toString().replace(/\n/gm, '\n  '))
+      prefix = ''
     })
     p.on('close', resolve)
   })
