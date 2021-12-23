@@ -2,7 +2,6 @@ import SQLite from 'better-sqlite3'
 import { webcrypto as crypto } from 'crypto'
 const { subtle } = crypto
 
-// Prepare the table
 const db = new SQLite('13_signature_id.db')
 db.prepare('CREATE TABLE names (id BYTE(96) PRIMARY KEY, name TEXT) WITHOUT ROWID').run()
 const insert = db.prepare('INSERT INTO names (id, name) VALUES (?, ?)')
@@ -37,5 +36,4 @@ const client = {
 
 await client.run()
 
-// Show what is stored in the db
 console.log(db.prepare('SELECT * FROM names').all())

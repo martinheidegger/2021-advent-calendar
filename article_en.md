@@ -2,9 +2,9 @@ License: [CC-BY-SA](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 ---
 
-日本語へ翻訳中です。しばらくお待ちください。:bow:
+[ [日本語版](https://qiita.com/martinheidegger/items/425112e84f7c12148d90) ]
 
-Following my 2020 blog post about [Promise cancellation](https://qiita.com/martinheidegger/items/6e8275d2de88174bc7e6) this is yet another basic topic. 
+Following my 2020 blog post about [Promise cancellation](https://qiita.com/martinheidegger/items/3e6355e96e85fc1c841e), this is yet another basic topic that I want to explore deeper.
 
 Identity (short ID) - the way to identify a _thing_ - is something most tools provide out-of-the-box so you don't need to think about it. But we are building for users. Humans. Often IDs comes in contact with the user - be it in an URL or on a receipt - and then the shape of an ID can make an actual difference.
 
@@ -14,21 +14,21 @@ You can find the code for this article in the related [github repo][github].
 
 ## Classic ID's, auto increment
 
-First we need to cover the basics :sweat_smile:. In a very fundamental meaning _Identity_ is nothing but a number to distinguish different objects from another.
+First we need to cover the basics :sweat_smile:. In a very fundamental meaning ID is nothing but a number to distinguish different objects from another.
 
 ```js
 const list = ['kei', 'tetsuo', 'kaneda', 'akira'] 
 ```
 
-In this list of names the _Identity_ of `kei` is `0` and of `tetsuo` is `1`. At `list[0]` you can find `kei`, at `list[1]` you can find `tetsuo`. `0` and `1` are clear, direct and shorter than the names themselves.
+In this list of names the ID of `kei` is `0` and of `tetsuo` is `1`. At `list[0]` you can find `kei`, at `list[1]` you can find `tetsuo`. `0` and `1` are clear, direct and shorter than the names themselves.
 
 What you notice about the IDs here is that they grow automatically. Run `list.push('ryu')` and then `ryu` has the ID `4`. This is a simplified view of `auto increment`-IDs that you can find in a database.
 
-SQLite is a surprisingly powerful database that allows us to create a similar list in a few lines. [better-sqlite3][bettersql3] is a good Node.js package for it:
+[SQLite][sqlite] is a easy-to-use, but surprisingly powerful database that allows us to create a similar list in a few lines. [better-sqlite3][bettersql3] is a good Node.js package for it. We can easily create a list with an auto-incrementing ID:
 
 %%01_sqlite.mjs%%
 
-The output is, as expected, creates an automatic new ID for each new entry.
+The output is as expected. It creates automatically a new ID for each new entry.
 
 ```js:output
 [
@@ -42,18 +42,18 @@ The output is, as expected, creates an automatic new ID for each new entry.
 
 Auto-incrementing IDs are a very common thing in accounting as they have two nice properties:
 
-- They are short → you rarely have more than 100000 receipts.
+- They are short → you rarely have more than 1000000 receipts.
 - They are sortable → you know which item was added first.
 
-But other than this, there is a good, straight recommendation against this noted even in the [SQLite documentation][sqlite-autoinc]:
+However, there is a important recommendation against this in the [SQLite documentation][sqlite-autoinc]:
 
 > The AUTOINCREMENT keyword imposes **extra CPU, memory, disk space, and disk I/O overhead** and should be avoided if not strictly needed. It is usually not needed. 
 
-There are also logical arguments against auto increments worth thinking about other solutions:
+There are also logical arguments against auto increments worth considering:
 
 - Information disclosure → You expose how much traffic is happening, how many documents are created, how many transactions are happening.
 - Enumerability → If you offer an API like `.../document/1` a user could easily guess `../document/2` which can be a problem if you think about scraping.
-- Not unique for all lists → Items of different tables can have the same ID, which means that you need to remember the object-id always.
+- Not unique for all lists → Items of different tables can have the same ID, which means that you need to remember the item's type always.
 
 But the biggest problem it creates is a performance bottle-neck: **The code that increments this number needs to be [atomic][] on a single machine!**
 
@@ -81,7 +81,7 @@ As you notice every ID here is unique. Awesome! But the more IDs we add, the big
 { id: 88, name: 'takashi' }
 ```
 
-Here `takashi` has the same ID as `tetsuo` and this is called an **ID collision**. It happens because we have a limited number of possible IDs _(aka. `number-space`; `256` in the example)_. The more items we add, the bigger the chance is for IDs to collide.
+Here `takashi` has the same ID as `tetsuo` and this is called an **ID collision**. It happens because we have a limited number of possible IDs _(aka. `number space`; `256` in the example)_. The more items we add, the bigger the chance is for IDs to collide.
 
 With a little math with can figure out how likely it is for this to happen. :nerd: I am not the best at math myself but I found this formula for the collision described at length in the [Wikipedia article about the "Birthday Problem"][bdayprob] :birthday: :
 
@@ -103,7 +103,7 @@ H(n, p) \approx n^2 / (2 ln(1 / (1 - p)))
 - `H` ... number space to work with
 - `n` ... amount of items
 
-For the example above: With 1 item we have 0 risk of collision, with two items we have a 1 in 256 chance of a collision with 5 items we have about a 5% risk that that one of the items collides: Running the code 20 times should result in a collision.
+For the example above: With 1 item we have 0 risk of collision, with two items we have a 1 in 256 chance of a collision with 5 items we have about a 5% risk that that one of the items collides. Running the code 20 times should result in a collision.
 
 By making the number-space bigger we can reduce the chance that a collision could happen. Why is this important? Because if we are _reasonably_ certain that no collision can occur, the solution is production ready.
 
@@ -111,7 +111,7 @@ But what is _reasonably_ certain? Google has about [10<sup>13</sup>](https://ard
 
 We want to make sure that even with `n` items created the chance for a collision needs to be really, really low. 10<sup>-6</sup> is a very low chance **one** collision may occur.
 
-Below you see the [table that can be found on wikipedia](https://en.wikipedia.org/wiki/Birthday_attack#Mathematics), highlighting the number we are looking for:
+Below you see the [table that can be found on wikipedia](https://en.wikipedia.org/wiki/Birthday_attack#Mathematics). I highlighted the number we are looking for:
 
 | byte | H | p=10<sup>−18</sup> | p=10<sup>−15</sup> | p=10<sup>−12</sup> | p=10<sup>−9</sup> | p=10<sup>−6</sup> | p=0.1% | p=1% | p=25% | p=50% | p=75% |
 |------|----------------------|------------------------------------------------------|-------|-------|-------|------|------|------|----|-----|-----|-----|
@@ -124,16 +124,16 @@ Below you see the [table that can be found on wikipedia](https://en.wikipedia.or
 | 64 | 2<sup>512</sup> (~1.3 × 10<sup>154</sup>) | 1.6 × 10<sup>68</sup> | 5.2 × 10<sup>69</sup> | 1.6 × 10<sup>71</sup> | 5.2 × 10<sup>72</sup> | 1.6 × 10<sup>74</sup> | 5.2 × 10<sup>75</sup> | 1.6 × 10<sup>76</sup> | 8.8 × 10<sup>76</sup> | 1.4 × 10<sup>77</sup> | 1.9 × 10<sup>77</sup> |
 
 
-_(How to read the table: For a 1 in 1000 chance of (0.1%) that a probability occurs we can insert about 36 items. If we insert 190 items the can drops to 1 in 4.)_
+_(How to read the table: For a 1 in 1000 chance (0.1%) that a probability occurs, we can insert about 36 items. If we insert 190 items the chance increases to 1 in 4.)_
 
-What we learn here is that we only need **16 bytes of randomness** for a good random ID that will work in pretty much any context! There is practically no chance that we will create this amount of IDs any time soon.
+What we learn here is that we only need **16 bytes of randomness** (128bit) for a good random ID that will work in pretty much any context! There is practically no chance that we will create this amount of IDs any time soon.
 
 ```js
 import { webcrypto as crypto } from 'crypto'
 const good_random_id = crypto.getRandomValues(new Uint8Array(16))
 ```
 
-We can try this out with our SQLite list example:
+We can reuse our SQLite list example to try this out:
 
 %%04_random_id.mjs%%
 
@@ -149,7 +149,7 @@ We can try this out with our SQLite list example:
 
 Please note that we are using `WITHOUT ROWID` which makes SQLite faster but we loose the insert sorting!
 
-Funny enough the [`UUID` standard][uuid] came to same conclusion with UUIDv4. Recently `crypto.randomUUID` was even added to the [WEB API's][randomUUID-web]:
+Funny enough, the [`UUID` standard][uuid] came to same conclusion with UUIDv4. Recently `crypto.randomUUID` was even added to the [WEB API's][randomUUID-web]:
 
 ```js
 import { webcrypto as crypto } from 'crypto'
@@ -158,10 +158,10 @@ const uuid = crypto.randomUUID()
 
 _Note: Actually UUIDs only have 122bit of random plus a 6bit version identifier._
 
-This random ID can be used instead of an auto-increment ID and we gain a powerful feature:
+This random ID can be used instead of an auto-increment ID and we gain one powerful feature:
 multiple writers! :metal:
 
-In case you feel more comfortable wit the standard, here the previous example using UUID's:
+In case you feel more comfortable with the standard, here the previous example using UUIDs:
 
 %%05_uuid.mjs%%
 
@@ -177,24 +177,24 @@ In case you feel more comfortable wit the standard, here the previous example us
 
 This is a "Bazooka" kind of a solution. :boom:
 
-It can be used immediately and it works for the majority of cases. It also has some relevant downsides, two of which are slightly obvious:
+It can be used immediately and it works for the majority of use-cases. It also has some relevant downsides, two of which are slightly obvious:
 
-1. It is very long.
-1. You can't use it for sorting.
+1. The IDs are pretty long.
+1. Random data can not be sorted.
 
-_Sidenote:_ [Quiita][quiita] uses 10byte random IDs for articles which means Quiita should support up to <code>10<sup>8</sup></code> articles comfortably. :smiley_cat: 
+_Sidenote:_ [Quiita][quiita] uses 10byte random IDs for articles. This means Quiita should support up to 10<sup>8</sup> articles comfortably. :smiley_cat: 
 
 ## Making use of time
 
 What if we think about our items not for the time span of a 100 years, but for the duration of a millisecond?
 
-We wouldn't need to prepare for 10<sup>16</sup> items. 10<sup>9</sup> would suffice just as well. This gives us <code>H(10<sup>9</sup>, 10<sup>-6</sup>)</code> → <code>~10<sup>24</sup></code> this number fits snugly into a 80bit (=2<sup>80</sup>) number.
+Instead of thinking about 10<sup>16</sup> items we would only need to think about roughly 10<sup>9</sup> items. Using the previous formula for a equal probability with a 10<sup>-6</sup> probability: <code>H(10<sup>9</sup>, 10<sup>-6</sup>)</code> we get a number space of <code>~10<sup>24</sup></code>. This number fits snugly into a 10 byte (=2<sup>80</sup>) number.
 
-This means **128bit in 100 years is about as good as 80bits per ms!**
+This means **128bit for 100 years is about as good as 80bits for 1ms!**
 
-If we stick with 128bit for an ID we can use 48bit for the time. Starting from 1970, this will make the biggest possible timestamp in about ~10000 years which should suffice.
+If we stick with 128bit for the whole ID we have 48bit left for the time. Starting from 1970, this will make the biggest possible timestamp in about ~10000 years which should suffice.
 
-Now we can combine `timestamp(48bit) + random(80bit)` and we get IDs that are comparable to random IDs but they are sortable by their timestamp!
+So, let's combine `timestamp(48bit) + random(80bit)` and we get IDs that are comparable to UUIDv4 random IDs but they are sortable by their timestamp!
 
 %%06_timestamp_bytes.mjs%%
 
@@ -212,19 +212,21 @@ Note that all names are correctly sorted. The timestamp is the first 6 bytes →
 
 This sorting isn't perfect. Multiple ID's created within a millisecond will not be sorted correctly, but for most practical purposes it should work just fine.
 
-Oddly enough UUIDv1 and UUIDv2 were implemented mostly using this pattern. However, the [endianness](https://en.wikipedia.org/wiki/Endianness) was not properly specified and implemented. Some implementations (including  the [`uuid` npm package](https://npmjs.com/package/uuid)) use little or mixed endianess, making these UUIDv1 IDs not consistently sortable :rolling_eyes:.
+Oddly enough, UUIDv1 and UUIDv2 were implemented mostly using this pattern. However, the [endianness](https://en.wikipedia.org/wiki/Endianness) was not properly specified and implemented. Some implementations (including  the [`uuid` npm package](https://npmjs.com/package/uuid)) use little- or mixed endianess, preventing these UUIDv1 IDs from being consistently sortable. :rolling_eyes:
 
-There are two standards that implement this ID pattern: [ULID](https://github.com/ulid/spec) and the upcoming [UUIDv6](https://github.com/uuid6/uuid6-ietf-draft) ([PR#42](https://github.com/uuid6/uuid6-ietf-draft/pull/42/files) for latest updates).
+There are two other standards that implement exactly this ID pattern: [ULID](https://github.com/ulid/spec) and the upcoming [UUIDv6](https://github.com/uuid6/uuid6-ietf-draft) ([PR#42](https://github.com/uuid6/uuid6-ietf-draft/pull/42/files) for latest updates).
 
-While researching for this article, I noticed that the implementation of ULID - particularly for Node.js - was very inefficient and it's implementations are inconsistent. Because of this, my recommendation is: **do not use ULID!** Use UUIDv6 if you can. It is properly specified and well thought through.
+While researching for this article, I noticed that the implementation of ULID - particularly for Node.js - was very inefficient and it's implementations are inconsistent. Because of this, my recommendation is: **do not use ULID!**
+
+Use UUIDv6 if you can. It is properly specified and well thought through.
 
 ## IDs for Humans
 
-There are other ID systems out there as well. One very public one is twitter. It uses  [`<time><worker-id><increment>` IDs][twitter-ids] encoded as decimal number. It is a very interesting format as it is not distracting for humans and contains important information for debugging.
+There are other ID systems out there as well. One very public one is twitter. It uses  [`<time><worker-id><increment>` IDs][twitter-ids] encoded as decimal number. It is a very interesting format as it is not distracting for humans and contains important information for debugging. This inspires me to think: how can I make the UUID presentation better?
 
 One thing good about ULID is that it uses [Crockford's Base32][cbase32] encoding instead of Hex encoding for the numbers.
 
-In case you are unfamiliar with what that means, here is an example of the same 16 byte data encoded in differently:
+In case you are unfamiliar with what that means, here is an example of the same 16 byte data encoded using different encodings:
 
 | Encoding | Data |
 |---|---|
@@ -237,7 +239,7 @@ In case you are unfamiliar with what that means, here is an example of the same 
 
 Whatever code you write: it is hopefully used by humans in the end.
 
-Think about it: How would each of these ID's look like in a URL? Base64 is the shortest but it has URL unfriendly characters. 
+Think about it: How would each of these IDs look like in an URL? `Base64` is the shortest but it has URL unfriendly characters and its impossible to spell out.
 
 `Decimal` encoding is very long but easy~ish to spell by voice. `Hex` mixes numerals and alphabet characters. This makes it harder to spell than `decimal` by voice. It is also longer than `Base32`. `Base32` though has an important weakness: `I` `1` and `l` are characters that easy to be mistaken, depending on the used font.
 
@@ -251,7 +253,7 @@ For this reason, I created a small library to work with Crockford Base32 encoded
 JK6ADPC3DH0XK1HQXF1MT8SXFW
 ```
 
-In the previous chapters we have gone through a lot of theory that may have seemed unimportant but it should pay off now!
+In the previous section we have gone through a lot of theory that may have seemed unimportant but it should pay off now!
 
 Thinking about randomness and time: Most data types are not created so often. Let's say we build an invoice system: Do we really think more than 93 receipts posts are created in a millisecond? The answer is likely: _No_. :sweat_smile:
 
@@ -263,11 +265,11 @@ Using this assumption, we can drop 6 bytes of randomness because it works for ou
 05YXNQY45841Y
 ```
 
-Crockford Base 32 - [if implemented correctly][issue-cb32] - allows for `-` characters at any given position. This means our receipt ID could look like this:
+`Crockford Base 32` - [if implemented correctly][issue-cb32] - allows for `-` characters at any given position. This means our receipt ID could look like this:
 
 `05YXN-QY45-841Y`
 
-This works as long as we dont have more than 93 receipts per minute. Much easier to write down and spell out! :tada:
+This works as long as we don't have more than 93 receipts per minute. Much easier to write down and spell out! :tada:
 
 ---
 
@@ -313,7 +315,7 @@ Luckily, this isn't my idea. Other people already came up with ways how to do th
 The two basic concepts here are:
 
 - Content-based IDs (aka. hash)
-- Cryptograpical signing
+- Cryptographical signing
 
 ### Content-based IDs
 
@@ -455,18 +457,19 @@ Phew. This was a marathon! :runner:
 
 I hope you were able to learn new concepts about IDs or go into detail on things that were not quite clear before. I certainly refreshed my understanding. :champagne:
 
-Having an deeper understanding of IDs is maybe not the most important thing in our daily jobs, but to me this is fun. Letting the user create their work and having a server accept also feels like the future. :rocket:
+Having a deeper understanding of IDs is maybe not the most important thing in our daily jobs, but to me this is fun! Letting the user create their work and having a server accept it feels like the future. :rocket:
 
 For this article and much more, I want to thank my employer [tradle.io](https://tradle.io). I get to explore concepts like this in detail while working on OSS Identity software with even deeper human related aspects. Often it gets quite technical, such as multi-cloud lambda functions or high-speed react-native code. If you are also a nerd :nerd: and are interested in Node.js, decentralized systems or things alike, please let me know: We are hiring!
 
 - :bird: [Twitter](https://twitter.com/leichtgewicht)
 - :speech_left: [Discord](https://discord.com): martinheidegger#5254
 
-Thank you, and I hope you have a merry christmas and a good start in the next year.
+Thank you! I wish you a merry christmas and a good start in the next year.
 :heart: :xmas-tree:
 
 [github]: https://github.com/martinheidegger/2021-advent-calendar/
 [github-09]: https://github.com/martinheidegger/2021-advent-calendar/blob/main/09_human_id.mjs
+[sqlite]: https://sqlite.org
 [bettersql3]: https://github.com/JoshuaWise/better-sqlite3
 [sqlite-autoinc]: https://www.sqlite.org/autoinc.html
 [atomic]: https://en.wikipedia.org/wiki/Fetch-and-add

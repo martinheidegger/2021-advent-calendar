@@ -18,15 +18,12 @@ function newID () {
   return encodeBE(Date.now(), bytes)
 }
 
-// Prepare the table
 const db = new SQLite('06_timestamp_bytes.db')
 db.prepare('CREATE TABLE names (id BYTE(16) PRIMARY KEY, name TEXT) WITHOUT ROWID').run()
 
-// Insert names into database
 const insert = db.prepare('INSERT INTO names (id, name) VALUES (?, ?)')
 ;['kei', 'tetsuo', 'kaneda', 'akira', 'ryu'].forEach(name => {
   insert.run(newID(), name)
 })
 
-// Show what is stored in the db
 console.log(db.prepare('SELECT * FROM names').all())

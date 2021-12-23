@@ -9,11 +9,9 @@ async function hash (object) {
   )
 }
 
-// Prepare the table
 const db = new SQLite('10_subtle_hash.db')
 db.prepare('CREATE TABLE names (hash BYTE(16) PRIMARY KEY, name TEXT) WITHOUT ROWID').run()
 
-// Insert names into database
 const insert = db.prepare('INSERT INTO names (hash, name) VALUES (?, ?)')
 await Promise.all(
   ['kei', 'tetsuo', 'kaneda', 'akira', 'ryu'].map(async name => {
@@ -21,5 +19,4 @@ await Promise.all(
   })
 )
 
-// Show what is stored in the db
 console.log(db.prepare('SELECT * FROM names').all())

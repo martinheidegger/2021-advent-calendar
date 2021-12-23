@@ -20,9 +20,11 @@ function newID () {
 
 function reduceID ({ original, timeBytes, randomBytes }) {
   const bytes = new Uint8Array(timeBytes + randomBytes)
-  // The next lines may override previous written bytes and
-  // be ignored if they go over the size limit, but this is still
-  // faster than if switches.
+  // en The next lines may override previous written bytes and
+  // en be ignored if they go over the size limit, but this is still
+  // en faster than if switches.
+  // ja これからの行は以前に書いたナイトをさらに書いても良いです。サイズ制限を
+  // ja 超えても良いです。この方が if-スイッチより早いです。
   bytes[0] = original[0]
   bytes[1] = original[1]
   bytes[2] = original[2]

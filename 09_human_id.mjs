@@ -3,12 +3,14 @@ import { webcrypto as crypto } from 'crypto'
 import encode from 'base32-encode'
 
 const BYTE_LIMITS = {
-  // More than 1 item and we need to use 4 bytes
+  // en More than 1 item and we need to use 4 bytes
+  // ja １つのアイテムを超えると 4 バイトが必要になります。
   3: 1,
-  // More than 2(293) items and we need to use 5 bytes
-  // etc.
+  // en More than 2 (293 in producton) items and we need to use 5 bytes, etc.
+  // ja ２つ以上 (本番なら 293) があれば 5 バイトが必要になります。などなど
   //
-  // In production TODO: change from DEMO_Y to PRODUCTION_Y !!!
+  // en In production TODO: change from DEMO_Y to PRODUCTION_Y !!!
+  // ja 本番で使う前の TODO: DEMO_Y を PRODUCTION_Y に変化 !!!
   // ↓ X: DEMO_Y, // PRODUCTION_Y
   4: 2, // 293
   5: 3, // 4689,
@@ -22,7 +24,8 @@ const BYTE_LIMITS = {
 async function getHumanID (countItems, uuid) {
   const time = decodeBE(uuid)
   if (time > Date.now() - 0xFFFF) {
-    // Created in the ~last minute, lets assume the worst and return the full id
+    // en Created in the ~last minute, lets assume the worst and return the full id
+    // ja １分前ぐらいの間の ID だからまだ短くにするのが危ない。
     return uuid
   }
   let items = await countItems(
@@ -55,17 +58,18 @@ async function getHumanID (countItems, uuid) {
     }
   }
 
-  // Optional TODO: We could check here if the reduced ID is actually unique,
-  //                but this would cause another db read.
+  // en Optional TODO: We could check here if the reduced ID is actually unique,
+  // en                but this would cause another db read.
+  // ja Optional TODO: ここは本当にユーニックかのを調べることも安全のために追加できます。
+  // js                ただそのためにもう一つの DB read がいるのでここは無しです。
   return reduceID({ original: uuid, timeBytes, randomBytes })
 }
 
 
 function reduceID ({ original, timeBytes, randomBytes }) {
   const bytes = new Uint8Array(timeBytes + randomBytes)
-  // The next lines may override previous written bytes and
-  // be ignored if they go over the size limit, but this is still
-  // faster than if switches.
+  // en Doc: see 08_93pm.mjs
+  // ja Doc: 08_93pm.mjs に書いてある
   bytes[0] = original[0]
   bytes[1] = original[1]
   bytes[2] = original[2]
@@ -120,13 +124,11 @@ async function getItem (fetchItems, humanID) {
     fillArray(10, randomBytes, 0xFF)
   )
   if (items.length > 1) {
-    // In production TODO: Add this error
     throw new Error('ID is not unique. Chance for this to happen is 10e-6')
   }
   return items[0]
 }
 
-// I am omitting redundant code segments, find the full code here: TODO
 function decode3ByteToHex (bytes, offset) {
   return ((bytes[offset] << 16) | (bytes[offset + 1] << 8) | bytes[offset + 2]).toString(16)
 }
@@ -149,7 +151,6 @@ function encodeBE (num, bytes) {
   return bytes
 }
 
-// Prepare the table
 const db = new SQLite('09_human_id.db')
 db.prepare('CREATE TABLE names (time INTEGER, random BYTE(10), name TEXT, PRIMARY KEY(time, random)) WITHOUT ROWID').run()
 const timeRangeStmt = db.prepare('SELECT COUNT(0) FROM names WHERE time >= ? AND time <= ?')
@@ -192,7 +193,6 @@ let insertTime = 0
 
 const TIME_SLOT = 0x10000
 
-// The first entry of each statement will be at the same time!
 const nameObjectsByHumanIDBytes = {
   4: insertSameTime(insertTime, 'kei'),
   8: insertSameTwoByteSlot(insertTime += TIME_SLOT, 'tetsuo', 'akira'),
@@ -221,7 +221,8 @@ for (let [humanIDBytes, nameObjects] of Object.entries(nameObjectsByHumanIDBytes
     const humanID = await dbHumanID(uuid)
     const lookup = await dbItem(humanID)
     console.log(`time=${nameObject.time} name=${nameObject.name} → ${encode(humanID, 'Crockford')} (${humanID.length})`)
-    // Assert that the ID works
+    // en Assert that the ID works
+    // ja ID がちゃんと動いているの確認。
     if (!lookup || lookup.name != nameObject.name) {
       console.log({ lookup, nameObject })
       throw new Error('Lookup should return exactly that item')

@@ -1,3 +1,5 @@
 import { encode } from 'uuid-b32'
 
-console.log(encode()) // it will create a new uuid if you pass in nothing
+// en It will create a new UUIDv4 if you pass in nothing.
+// ja Input なしだだと新しい UUIDv4 が出る。
+console.log(encode())
